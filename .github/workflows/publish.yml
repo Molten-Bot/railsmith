@@ -21,6 +21,8 @@ jobs:
     name: Publish package
     if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' }}
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
 
     steps:
       - name: Checkout validated commit
