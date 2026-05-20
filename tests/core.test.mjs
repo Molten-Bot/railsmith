@@ -120,8 +120,20 @@ test("scanProject handles pnpm workspace files, invalid package JSON, and lockfi
   assert.equal(scanProject(npmRoot).packageManager, "npm");
 
   const workspaceObjectRoot = tempProject();
-  writeJson(workspaceObjectRoot, "package.json", { workspaces: { packages: ["libs/*", "docs", 7] } });
+  writeJson(workspaceObjectRoot, "package.json", {
+    packageManager: "yarn@4.0.0",
+    scripts: { "test:unit": "node --test" },
+    workspaces: { packages: ["libs/*", "docs", 7] }
+  });
+  assert.equal(scanProject(workspaceObjectRoot).packageManager, "yarn");
   assert.deepEqual(scanProject(workspaceObjectRoot).workspaces, ["libs/*", "docs"]);
+  assert.deepEqual(scanProject(workspaceObjectRoot).testCommands, ["yarn test:unit"]);
+
+  for (const packageManager of ["bun@1.0.0", "npm@11.0.0"]) {
+    const declaredRoot = tempProject();
+    writeJson(declaredRoot, "package.json", { packageManager, scripts: { "test:unit": "node --test" } });
+    assert.equal(scanProject(declaredRoot).packageManager, packageManager.split("@")[0]);
+  }
 
   const invalidRoot = tempProject();
   fs.writeFileSync(path.join(invalidRoot, "package.json"), "{ nope");
@@ -165,10 +177,12 @@ test("generateAgentsMd creates root and scoped managed Markdown in all modes", (
 
   const yarn = generateAgentsMd({ repoFacts: { ...facts, packageManager: "yarn", scripts: { dev: "vite" } } });
   const bun = generateAgentsMd({ repoFacts: { ...facts, packageManager: "bun", scripts: { dev: "vite" } } });
+  const noPackageManager = generateAgentsMd({ repoFacts: { ...facts, packageManager: undefined, scripts: { dev: "vite" } } });
   const slashScope = generateAgentsMd({ repoFacts: facts, patterns: [{ pattern: retryPattern, scope: "/" }] });
   const dotScope = generateAgentsMd({ repoFacts: facts, patterns: [{ pattern: retryPattern, scope: "." }] });
   assert.match(yarn.files[0].content, /yarn install/);
   assert.match(bun.files[0].content, /bun install/);
+  assert.match(noPackageManager.files[0].content, /npm run dev/);
   assert.deepEqual(slashScope.manifest.files[0].patterns, ["retry"]);
   assert.deepEqual(dotScope.manifest.files[0].patterns, ["retry"]);
 });
@@ -198,6 +212,7 @@ test("mergeAgentsMd preserves user content, replaces managed blocks, and reports
   const plainGenerated = mergeAgentsMd({ existing: "# Existing\n", generated: "## Plain\n- Body\n" });
   assert.match(plainGenerated.content, /agents-md:start core/);
   assert.match(plainGenerated.content, /Plain/);
+  assert.equal(mergeAgentsMd({ generated, strategy: "replace" }).content, generated);
   const fresh = mergeAgentsMd({ generated });
   assert.equal(fresh.content, generated);
   assert.equal(fresh.changed, true);
@@ -268,6 +283,18 @@ test("patterns validate, conflict, and suggest without runtime dependencies", ()
     patterns: [circuitBreakerPattern],
     goal: "zzzz"
   }), []);
+  const tiePattern = { ...retryPattern, id: "aaa-retry", title: "Retry Clone" };
+  const tied = suggestPatterns({
+    repoFacts: { ...repoFacts, packageName: undefined, packageDescription: undefined },
+    patterns: [retryPattern, tiePattern],
+    goal: "retry"
+  });
+  assert.equal(tied[0].pattern.id, "aaa-retry");
+  assert.deepEqual(suggestPatterns({
+    repoFacts: { ...repoFacts, packageName: undefined, packageDescription: undefined, scripts: {}, testCommands: [] },
+    patterns: [circuitBreakerPattern],
+    goal: undefined
+  }), []);
 
   const llmSuggestions = suggestPatterns({
     repoFacts,
@@ -301,6 +328,8 @@ test("checkAgentsMd reports missing files, stale scripts, unbalanced blocks, and
 
   fs.writeFileSync(path.join(root, "CUSTOM.md"), createManagedBlock("## Testing\n- Run `npm test`."));
   assert.deepEqual(checkAgentsMd({ root, filePath: "CUSTOM.md", repoFacts: scanProject(root) }).diagnostics, []);
+  assert.ok(checkAgentsMd({ repoFacts: scanProject(root), filePath: "CUSTOM.md" }).diagnostics.length === 0);
+  assert.ok(checkAgentsMd().diagnostics.length >= 0);
 });
 
 test("createUnifiedDiff reports changed and unchanged files", () => {
@@ -337,7 +366,17 @@ test("CLI supports help, guide, doctor, check, diff, init, compose, scopes, and 
   io.guidePath = path.join(root, "missing-guide.md");
   assert.equal(runCli(["guide"], io), 0);
   assert.match(io.stdoutText(), /without `--dry-run`/);
+  fs.writeFileSync(path.join(root, "short-guide.md"), "# Short");
+  io.guidePath = path.join(root, "short-guide.md");
+  assert.equal(runCli(["guide"], io), 0);
+  assert.match(io.stdoutText(), /# Short\n$/);
   delete io.guidePath;
+  io.clear();
+
+  const emptyRoot = tempProject();
+  assert.equal(runCli(["doctor", "--root", emptyRoot], io), 0);
+  assert.match(io.stdoutText(), /Package manager: none detected/);
+  assert.match(io.stdoutText(), /Existing agent files: none detected/);
   io.clear();
 
   assert.equal(runCli(["doctor", "--root", root], io), 0);
@@ -362,9 +401,29 @@ test("CLI supports help, guide, doctor, check, diff, init, compose, scopes, and 
   assert.match(fs.readFileSync(path.join(root, "AGENTS.md"), "utf8"), /Retry Pattern/);
   io.clear();
 
+  fs.mkdirSync(path.join(root, "packages", "api"), { recursive: true });
+  assert.equal(runCli(["doctor", "--root", root], io), 0);
+  assert.match(io.stdoutText(), /Existing agent files: AGENTS.md/);
+  io.clear();
+
+  fs.writeFileSync(path.join(root, "AGENTS.md"), "<!-- agents-md:start core -->\n");
+  assert.equal(runCli(["check", "--root", root], io), 1);
+  assert.match(io.stderrText(), /managed-block.unbalanced/);
+  io.clear();
+  assert.equal(runCli(["doctor", "--root", root], io), 1);
+  assert.match(io.stderrText(), /managed-block.unbalanced/);
+  io.clear();
+  fs.writeFileSync(path.join(root, "AGENTS.md"), createManagedBlock("## Testing\n- Run `npm test`."));
+
+  assert.equal(runCli(["doctor", "--root", root], io), 0);
+  io.clear();
+
   assert.equal(runCli(["compose", "--root", root, "--config", "agents-md.config.json", "--scope", "packages/api:retry.pattern.json", "--dry-run"], io), 0);
   assert.match(io.stdoutText(), /packages\/api\/AGENTS.md/);
   assert.equal(fs.existsSync(path.join(root, "packages", "api", "AGENTS.md")), false);
+  io.clear();
+
+  assert.equal(runCli(["diff", "--root", root, "--scope"], io), 0);
   io.clear();
 
   assert.equal(runCli(["check", "--root", root], io), 0);
@@ -383,6 +442,21 @@ test("CLI supports help, guide, doctor, check, diff, init, compose, scopes, and 
     assert.equal(runCli(["unknown-default-io"]), 1);
     assert.ok([0, 1].includes(runCli()));
   });
+});
+
+test("bin entrypoint delegates to the CLI", async () => {
+  const originalArgv = process.argv;
+  const originalExitCode = process.exitCode;
+
+  await withPatchedStdAsync(async () => {
+    process.argv = [originalArgv[0], path.join(process.cwd(), "dist", "bin.js"), "help"];
+    process.exitCode = undefined;
+    await import(`../dist/bin.js?run=${Date.now()}`);
+    assert.equal(process.exitCode, 0);
+  });
+
+  process.argv = originalArgv;
+  process.exitCode = originalExitCode;
 });
 
 function tempProject() {
@@ -426,6 +500,19 @@ function withPatchedStd(callback) {
   process.stderr.write = () => true;
   try {
     callback();
+  } finally {
+    process.stdout.write = originalStdout;
+    process.stderr.write = originalStderr;
+  }
+}
+
+async function withPatchedStdAsync(callback) {
+  const originalStdout = process.stdout.write;
+  const originalStderr = process.stderr.write;
+  process.stdout.write = () => true;
+  process.stderr.write = () => true;
+  try {
+    await callback();
   } finally {
     process.stdout.write = originalStdout;
     process.stderr.write = originalStderr;

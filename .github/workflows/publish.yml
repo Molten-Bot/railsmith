@@ -1,0 +1,68 @@
+name: Publish to npm
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    branches:
+      - main
+    types:
+      - completed
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-publish-main
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish package
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout validated commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set up Node.js for npm trusted publishing
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and test with coverage
+        run: npm run coverage
+
+      - name: Verify npm package contents
+        run: npm pack --dry-run
+
+      - name: Read package metadata
+        id: package
+        run: |
+          node -e "const p = require('./package.json'); console.log('name=' + p.name); console.log('version=' + p.version)" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether version is already published
+        id: published
+        run: |
+          if npm view "${{ steps.package.outputs.name }}@${{ steps.package.outputs.version }}" version > /dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npm
+        if: ${{ steps.published.outputs.exists == 'false' }}
+        run: npm publish
+
+      - name: Skip already published version
+        if: ${{ steps.published.outputs.exists == 'true' }}
+        run: echo "${{ steps.package.outputs.name }}@${{ steps.package.outputs.version }} is already published; skipping npm publish."

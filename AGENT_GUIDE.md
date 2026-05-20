@@ -5,6 +5,8 @@ This guide is shipped with the npm package so an agent can help a user create or
 Reference status:
 - AGENTS.md public guidance verified against https://agents.md/ on 2026-05-20.
 - TypeScript dev dependency checked with `npm view typescript version` on 2026-05-20; latest observed release was `6.0.3`.
+- GitHub Actions references checked on 2026-05-20; workflows use `actions/checkout@v6` and `actions/setup-node@v6`.
+- npm trusted publishing guidance checked on 2026-05-20; release uses GitHub Actions OIDC instead of a long-lived npm token.
 - Runtime dependency count: zero.
 
 ## Default Workflow
@@ -66,3 +68,11 @@ agents-md init --root . --scope packages/api:retry.pattern.json
 agents-md diff --root . --mode detailed
 agents-md check --root .
 ```
+
+## CI and Release Notes For Agents
+
+- Pull requests must pass `.github/workflows/ci.yml`, which runs install, 100% coverage, and `npm pack --dry-run`.
+- Merges to `main` trigger the same CI workflow; publishing is gated by the successful `CI` workflow run.
+- `.github/workflows/publish.yml` publishes only from the validated `main` commit and skips if the package version already exists on npm.
+- npm trusted publishing must be configured on npmjs.com for organization/user `Molten-Bot`, repository `agents-markdown`, and workflow filename `publish.yml`.
+- Do not add `NPM_TOKEN` unless the user explicitly chooses token-based publishing; the intended path is OIDC trusted publishing.

@@ -1,10 +1,9 @@
 #!/usr/bin/env node
-interface CliIo {
+export interface CliIo {
     cwd: string;
     stdout: (message: string) => void;
     stderr: (message: string) => void;
     guidePath?: string;
 }
-export declare function runCli(argv?: any, io?: CliIo): number;
-export {};
+export declare function runCli(argv?: string[], io?: CliIo): number;
 //# sourceMappingURL=cli.d.ts.map

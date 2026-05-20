@@ -3,9 +3,17 @@
   "version": "0.1.0",
   "description": "TypeScript SDK and CLI for generating and safely maintaining AGENTS.md guardrails.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Molten-Bot/agents-markdown.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Molten-Bot/agents-markdown/issues"
+  },
+  "homepage": "https://github.com/Molten-Bot/agents-markdown#readme",
   "type": "module",
   "bin": {
-    "agents-md": "./dist/cli.js"
+    "agents-md": "./dist/bin.js"
   },
   "exports": {
     ".": {
@@ -30,6 +38,9 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "devDependencies": {
     "typescript": "6.0.3"

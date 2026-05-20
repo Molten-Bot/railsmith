@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { checkAgentsMd } from "./check.js";
 import { createUnifiedDiff } from "./diff.js";
 import { generateAgentsMd } from "./generate.js";
@@ -19,14 +19,14 @@ interface CliOptions {
   dryRun: boolean;
 }
 
-interface CliIo {
+export interface CliIo {
   cwd: string;
   stdout: (message: string) => void;
   stderr: (message: string) => void;
   guidePath?: string;
 }
 
-export function runCli(argv = process.argv.slice(2), io: CliIo = defaultIo()): number {
+export function runCli(argv: string[] = process.argv.slice(2), io: CliIo = defaultIo()): number {
   const options = parseArgs(argv, io.cwd);
 
   if (options.command === "help" || options.command === "--help" || options.command === "-h") {
@@ -222,9 +222,3 @@ function fallbackGuide(): string {
 Use \`agents-md init --dry-run\` to inspect proposed AGENTS.md changes, then rerun without \`--dry-run\` when the user approves. Preserve user-authored guidance and rely on managed blocks for repeatable updates.
 `;
 }
-
-/* node:coverage disable */
-if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  process.exitCode = runCli();
-}
-/* node:coverage enable */

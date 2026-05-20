@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { checkAgentsMd } from "./check.js";
 import { createUnifiedDiff } from "./diff.js";
 import { generateAgentsMd } from "./generate.js";
@@ -180,9 +180,4 @@ function fallbackGuide() {
 Use \`agents-md init --dry-run\` to inspect proposed AGENTS.md changes, then rerun without \`--dry-run\` when the user approves. Preserve user-authored guidance and rely on managed blocks for repeatable updates.
 `;
 }
-/* node:coverage disable */
-if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
-    process.exitCode = runCli();
-}
-/* node:coverage enable */
 //# sourceMappingURL=cli.js.map
