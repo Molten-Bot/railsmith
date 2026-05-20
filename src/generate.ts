@@ -350,10 +350,7 @@ function groupScopedSelections(selections: PatternSelection[]): Map<string, Patt
   const grouped = new Map<string, PatternSelection[]>();
 
   for (const selection of selections) {
-    const scope = selection.scope;
-    if (!scope) {
-      continue;
-    }
+    const scope = selection.scope!;
 
     const existing = grouped.get(scope) ?? [];
     existing.push(selection);

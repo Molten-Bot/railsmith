@@ -258,9 +258,6 @@ function groupScopedSelections(selections) {
     const grouped = new Map();
     for (const selection of selections) {
         const scope = selection.scope;
-        if (!scope) {
-            continue;
-        }
         const existing = grouped.get(scope) ?? [];
         existing.push(selection);
         grouped.set(scope, existing);

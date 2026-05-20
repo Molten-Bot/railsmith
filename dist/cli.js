@@ -74,7 +74,7 @@ function runDoctor(options, io) {
     return hasError(check.diagnostics) ? 1 : 0;
 }
 function runGuide(io) {
-    const guidePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "AGENT_GUIDE.md");
+    const guidePath = io.guidePath ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "AGENT_GUIDE.md");
     const guide = fs.existsSync(guidePath) ? fs.readFileSync(guidePath, "utf8") : fallbackGuide();
     io.stdout(guide.endsWith("\n") ? guide : `${guide}\n`);
     return 0;
@@ -174,16 +174,15 @@ function defaultIo() {
         stderr: (message) => process.stderr.write(message)
     };
 }
-function isDirectRun(metaUrl, argvPath) {
-    return argvPath !== undefined && metaUrl === pathToFileURL(argvPath).href;
-}
 function fallbackGuide() {
     return `# agents-md Agent Guide
 
 Use \`agents-md init --dry-run\` to inspect proposed AGENTS.md changes, then rerun without \`--dry-run\` when the user approves. Preserve user-authored guidance and rely on managed blocks for repeatable updates.
 `;
 }
-if (isDirectRun(import.meta.url, process.argv[1])) {
+/* node:coverage disable */
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
     process.exitCode = runCli();
 }
+/* node:coverage enable */
 //# sourceMappingURL=cli.js.map

@@ -120,8 +120,8 @@ test("scanProject handles pnpm workspace files, invalid package JSON, and lockfi
   assert.equal(scanProject(npmRoot).packageManager, "npm");
 
   const workspaceObjectRoot = tempProject();
-  writeJson(workspaceObjectRoot, "package.json", { workspaces: { packages: ["libs/*", 7] } });
-  assert.deepEqual(scanProject(workspaceObjectRoot).workspaces, ["libs/*"]);
+  writeJson(workspaceObjectRoot, "package.json", { workspaces: { packages: ["libs/*", "docs", 7] } });
+  assert.deepEqual(scanProject(workspaceObjectRoot).workspaces, ["libs/*", "docs"]);
 
   const invalidRoot = tempProject();
   fs.writeFileSync(path.join(invalidRoot, "package.json"), "{ nope");
@@ -165,8 +165,12 @@ test("generateAgentsMd creates root and scoped managed Markdown in all modes", (
 
   const yarn = generateAgentsMd({ repoFacts: { ...facts, packageManager: "yarn", scripts: { dev: "vite" } } });
   const bun = generateAgentsMd({ repoFacts: { ...facts, packageManager: "bun", scripts: { dev: "vite" } } });
+  const slashScope = generateAgentsMd({ repoFacts: facts, patterns: [{ pattern: retryPattern, scope: "/" }] });
+  const dotScope = generateAgentsMd({ repoFacts: facts, patterns: [{ pattern: retryPattern, scope: "." }] });
   assert.match(yarn.files[0].content, /yarn install/);
   assert.match(bun.files[0].content, /bun install/);
+  assert.deepEqual(slashScope.manifest.files[0].patterns, ["retry"]);
+  assert.deepEqual(dotScope.manifest.files[0].patterns, ["retry"]);
 });
 
 test("generateAgentsMd supports empty projects, custom root file names, disabled scoped output, and invalid patterns", () => {
@@ -188,8 +192,12 @@ test("mergeAgentsMd preserves user content, replaces managed blocks, and reports
   assert.equal(managedBlockEnd("x"), "<!-- agents-md:end x -->");
   assert.match(createManagedBlock("## Body"), /## Body/);
   assert.equal(extractManagedBlock("no block"), undefined);
+  assert.equal(extractManagedBlock("<!-- agents-md:end core -->\n<!-- agents-md:start core -->"), undefined);
 
   const generated = "# AGENTS.md\n\n" + createManagedBlock("## Generated\n- New") + "\n";
+  const plainGenerated = mergeAgentsMd({ existing: "# Existing\n", generated: "## Plain\n- Body\n" });
+  assert.match(plainGenerated.content, /agents-md:start core/);
+  assert.match(plainGenerated.content, /Plain/);
   const fresh = mergeAgentsMd({ generated });
   assert.equal(fresh.content, generated);
   assert.equal(fresh.changed, true);
@@ -255,6 +263,11 @@ test("patterns validate, conflict, and suggest without runtime dependencies", ()
   };
   const suggestions = suggestPatterns({ repoFacts, patterns: [retryPattern, circuitBreakerPattern], goal: "Need retry with idempotent operations." });
   assert.equal(suggestions[0].pattern.id, "retry");
+  assert.deepEqual(suggestPatterns({
+    repoFacts: { ...repoFacts, packageName: "", packageDescription: "", scripts: {}, testCommands: [] },
+    patterns: [circuitBreakerPattern],
+    goal: "zzzz"
+  }), []);
 
   const llmSuggestions = suggestPatterns({
     repoFacts,
@@ -276,7 +289,7 @@ test("checkAgentsMd reports missing files, stale scripts, unbalanced blocks, and
   writeJson(root, "package.json", { scripts: { test: "node --test", start: "node server.js", ci: "node ci.js", build: "tsc" } });
   fs.writeFileSync(path.join(root, "AGENTS.md"), [
     "# AGENTS.md",
-    createManagedBlock("## Setup\n- Run `npm run missing`.\n- Run `npm test`.\n- Run `npm start`.\n- Run `pnpm ci`.\n- Run `yarn build`.\n- Run `bun test`.\n- Run `pnpm install`.")
+    createManagedBlock("## Setup\n- Run `npm run missing`.\n- Run `npm test`.\n- Run `npm start`.\n- Run `pnpm ci`.\n- Run `yarn build`.\n- Run `bun test`.\n- Run `yarn install`.\n- Run `bun install`.\n- Run `pnpm install`.")
   ].join("\n"));
   const stale = checkAgentsMd({ root });
   assert.ok(stale.diagnostics.some((diagnostic) => diagnostic.code === "agents-md.script-missing"));
@@ -285,6 +298,9 @@ test("checkAgentsMd reports missing files, stale scripts, unbalanced blocks, and
   const broken = checkAgentsMd({ root });
   assert.ok(broken.diagnostics.some((diagnostic) => diagnostic.code === "managed-block.unbalanced"));
   assert.ok(broken.diagnostics.some((diagnostic) => diagnostic.code === "agents-md.testing-undocumented"));
+
+  fs.writeFileSync(path.join(root, "CUSTOM.md"), createManagedBlock("## Testing\n- Run `npm test`."));
+  assert.deepEqual(checkAgentsMd({ root, filePath: "CUSTOM.md", repoFacts: scanProject(root) }).diagnostics, []);
 });
 
 test("createUnifiedDiff reports changed and unchanged files", () => {
@@ -337,6 +353,10 @@ test("CLI supports help, guide, doctor, check, diff, init, compose, scopes, and 
   assert.match(io.stderrText(), /pattern.id.required/);
   io.clear();
 
+  assert.equal(runCli(["init", "--root", root, "--pattern", "invalid.pattern.json"], io), 1);
+  assert.match(io.stderrText(), /pattern.id.required/);
+  io.clear();
+
   assert.equal(runCli(["init", "--root", root, "--pattern", "retry.pattern.json"], io), 0);
   assert.equal(fs.existsSync(path.join(root, "AGENTS.md")), true);
   assert.match(fs.readFileSync(path.join(root, "AGENTS.md"), "utf8"), /Retry Pattern/);
@@ -353,7 +373,16 @@ test("CLI supports help, guide, doctor, check, diff, init, compose, scopes, and 
   assert.equal(runCli(["nope"], io), 1);
   assert.match(io.stderrText(), /Unknown command/);
 
-  assert.equal(runCli(["help"]), 0);
+  assert.equal(runCli([], io), 0);
+  io.clear();
+
+  withPatchedStd(() => {
+    assert.equal(runCli(["help"]), 0);
+    assert.equal(runCli(["--help"]), 0);
+    assert.equal(runCli(["-h"]), 0);
+    assert.equal(runCli(["unknown-default-io"]), 1);
+    assert.ok([0, 1].includes(runCli()));
+  });
 });
 
 function tempProject() {
@@ -388,4 +417,17 @@ function createIo(cwd) {
       err = "";
     }
   };
+}
+
+function withPatchedStd(callback) {
+  const originalStdout = process.stdout.write;
+  const originalStderr = process.stderr.write;
+  process.stdout.write = () => true;
+  process.stderr.write = () => true;
+  try {
+    callback();
+  } finally {
+    process.stdout.write = originalStdout;
+    process.stderr.write = originalStderr;
+  }
 }

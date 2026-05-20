@@ -216,10 +216,6 @@ function defaultIo(): CliIo {
   };
 }
 
-function isDirectRun(metaUrl: string, argvPath: string | undefined): boolean {
-  return argvPath !== undefined && metaUrl === pathToFileURL(argvPath).href;
-}
-
 function fallbackGuide(): string {
   return `# agents-md Agent Guide
 
@@ -228,7 +224,7 @@ Use \`agents-md init --dry-run\` to inspect proposed AGENTS.md changes, then rer
 }
 
 /* node:coverage disable */
-if (isDirectRun(import.meta.url, process.argv[1])) {
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
   process.exitCode = runCli();
 }
 /* node:coverage enable */
