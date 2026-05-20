@@ -48,7 +48,7 @@ function runGenerateCommand(options, io, dryRun) {
         const merge = mergeAgentsMd({ existing, generated: file.content });
         printDiagnostics(merge.diagnostics, io);
         io.stdout(createUnifiedDiff(file.path, existing, merge.content));
-        if (!dryRun && merge.diagnostics.every((diagnostic) => diagnostic.severity !== "error")) {
+        if (!dryRun && !hasError(merge.diagnostics)) {
             fs.mkdirSync(path.dirname(target), { recursive: true });
             fs.writeFileSync(target, merge.content);
         }
