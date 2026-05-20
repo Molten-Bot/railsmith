@@ -216,7 +216,7 @@ function loadBundledSelections(uses: Array<{ id: string; scope?: string }>): { p
       diagnostics.push({
         severity: "error",
         code: "pattern.bundled.missing",
-        message: `Bundled pattern "${item.id}" was not found. Run \`agents-md patterns list\` to inspect available ids.`
+        message: `Bundled pattern "${item.id}" was not found. Run \`railsmith patterns list\` to inspect available ids.`
       });
       continue;
     }
@@ -252,7 +252,7 @@ function hasError(diagnostics: Diagnostic[]): boolean {
 }
 
 function usage(): string {
-  return `agents-md <command> [options]
+  return `railsmith <command> [options]
 
 Commands:
   init       Scan a project and create or update managed AGENTS.md blocks.
@@ -284,8 +284,8 @@ function defaultIo(): CliIo {
 }
 
 function fallbackGuide(): string {
-  return `# agents-md Agent Guide
+  return `# railsmith Agent Guide
 
-Use \`agents-md init --dry-run\` to inspect proposed AGENTS.md changes, then rerun without \`--dry-run\` when the user approves. Preserve user-authored guidance and rely on managed blocks for repeatable updates.
+Use \`railsmith init --dry-run\` to inspect proposed AGENTS.md changes, then rerun without \`--dry-run\` when the user approves. Preserve user-authored guidance and rely on managed blocks for repeatable updates.
 `;
 }

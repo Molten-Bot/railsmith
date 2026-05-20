@@ -201,21 +201,21 @@ test("generateAgentsMd supports empty projects, custom root file names, disabled
 
   assert.equal(result.files.length, 1);
   assert.equal(result.files[0].path, "docs/AGENTS.generated.md");
-  assert.match(result.files[0].content, /agents-md:start custom/);
+  assert.match(result.files[0].content, /railsmith:start custom/);
   assert.ok(result.diagnostics.some((diagnostic) => diagnostic.code === "pattern.id.required"));
   assert.equal(result.manifest.files[0].patterns.length, 0);
 });
 
 test("mergeAgentsMd preserves user content, replaces managed blocks, and reports unsafe markers", () => {
-  assert.equal(managedBlockStart(), "<!-- agents-md:start core -->");
-  assert.equal(managedBlockEnd("x"), "<!-- agents-md:end x -->");
+  assert.equal(managedBlockStart(), "<!-- railsmith:start core -->");
+  assert.equal(managedBlockEnd("x"), "<!-- railsmith:end x -->");
   assert.match(createManagedBlock("## Body"), /## Body/);
   assert.equal(extractManagedBlock("no block"), undefined);
-  assert.equal(extractManagedBlock("<!-- agents-md:end core -->\n<!-- agents-md:start core -->"), undefined);
+  assert.equal(extractManagedBlock("<!-- railsmith:end core -->\n<!-- railsmith:start core -->"), undefined);
 
   const generated = "# AGENTS.md\n\n" + createManagedBlock("## Generated\n- New") + "\n";
   const plainGenerated = mergeAgentsMd({ existing: "# Existing\n", generated: "## Plain\n- Body\n" });
-  assert.match(plainGenerated.content, /agents-md:start core/);
+  assert.match(plainGenerated.content, /railsmith:start core/);
   assert.match(plainGenerated.content, /Plain/);
   assert.equal(mergeAgentsMd({ generated, strategy: "replace" }).content, generated);
   const fresh = mergeAgentsMd({ generated });
@@ -239,7 +239,7 @@ test("mergeAgentsMd preserves user content, replaces managed blocks, and reports
   const unsupported = mergeAgentsMd({ existing, generated, strategy: "replace" });
   assert.equal(unsupported.diagnostics[0].code, "merge.strategy.unsupported");
 
-  const broken = mergeAgentsMd({ existing: "<!-- agents-md:start core -->\n", generated });
+  const broken = mergeAgentsMd({ existing: "<!-- railsmith:start core -->\n", generated });
   assert.equal(broken.changed, false);
   assert.equal(broken.diagnostics[0].code, "managed-block.unbalanced");
 
@@ -327,7 +327,7 @@ test("bundled patterns are exported from the release snapshot", async () => {
 
 test("checkAgentsMd reports missing files, stale scripts, unbalanced blocks, and testing gaps", () => {
   const missingRoot = tempProject();
-  assert.equal(checkAgentsMd({ root: missingRoot }).diagnostics[0].code, "agents-md.missing");
+  assert.equal(checkAgentsMd({ root: missingRoot }).diagnostics[0].code, "railsmith.missing");
 
   const root = tempProject();
   writeJson(root, "package.json", { scripts: { test: "node --test", start: "node server.js", ci: "node ci.js", build: "tsc" } });
@@ -336,12 +336,12 @@ test("checkAgentsMd reports missing files, stale scripts, unbalanced blocks, and
     createManagedBlock("## Setup\n- Run `npm run missing`.\n- Run `npm test`.\n- Run `npm start`.\n- Run `pnpm ci`.\n- Run `yarn build`.\n- Run `bun test`.\n- Run `yarn install`.\n- Run `bun install`.\n- Run `pnpm install`.")
   ].join("\n"));
   const stale = checkAgentsMd({ root });
-  assert.ok(stale.diagnostics.some((diagnostic) => diagnostic.code === "agents-md.script-missing"));
+  assert.ok(stale.diagnostics.some((diagnostic) => diagnostic.code === "railsmith.script-missing"));
 
-  fs.writeFileSync(path.join(root, "AGENTS.md"), "<!-- agents-md:start core -->\nNo guidance.\n");
+  fs.writeFileSync(path.join(root, "AGENTS.md"), "<!-- railsmith:start core -->\nNo guidance.\n");
   const broken = checkAgentsMd({ root });
   assert.ok(broken.diagnostics.some((diagnostic) => diagnostic.code === "managed-block.unbalanced"));
-  assert.ok(broken.diagnostics.some((diagnostic) => diagnostic.code === "agents-md.testing-undocumented"));
+  assert.ok(broken.diagnostics.some((diagnostic) => diagnostic.code === "railsmith.testing-undocumented"));
 
   fs.writeFileSync(path.join(root, "CUSTOM.md"), createManagedBlock("## Testing\n- Run `npm test`."));
   assert.deepEqual(checkAgentsMd({ root, filePath: "CUSTOM.md", repoFacts: scanProject(root) }).diagnostics, []);
@@ -366,18 +366,18 @@ test("CLI supports help, guide, doctor, check, diff, init, compose, scopes, and 
   });
   fs.writeFileSync(path.join(root, "retry.pattern.json"), JSON.stringify(retryPattern, null, 2));
   fs.writeFileSync(path.join(root, "invalid.pattern.json"), JSON.stringify({ id: "" }, null, 2));
-  fs.writeFileSync(path.join(root, "agents-md.config.json"), JSON.stringify({
+  fs.writeFileSync(path.join(root, "railsmith.config.json"), JSON.stringify({
     project: { description: "CLI configured project" },
     sections: [{ id: "extra", title: "Extra", body: "Configured." }]
   }));
   const io = createIo(root);
 
   assert.equal(runCli(["help"], io), 0);
-  assert.match(io.stdoutText(), /agents-md <command>/);
+  assert.match(io.stdoutText(), /railsmith <command>/);
   io.clear();
 
   assert.equal(runCli(["guide"], io), 0);
-  assert.match(io.stdoutText(), /agents-md Agent Guide/);
+  assert.match(io.stdoutText(), /railsmith Agent Guide/);
   io.clear();
 
   io.guidePath = path.join(root, "missing-guide.md");
@@ -447,7 +447,7 @@ test("CLI supports help, guide, doctor, check, diff, init, compose, scopes, and 
   assert.match(io.stdoutText(), /Existing agent files: AGENTS.md/);
   io.clear();
 
-  fs.writeFileSync(path.join(root, "AGENTS.md"), "<!-- agents-md:start core -->\n");
+  fs.writeFileSync(path.join(root, "AGENTS.md"), "<!-- railsmith:start core -->\n");
   assert.equal(runCli(["check", "--root", root], io), 1);
   assert.match(io.stderrText(), /managed-block.unbalanced/);
   io.clear();
@@ -459,7 +459,7 @@ test("CLI supports help, guide, doctor, check, diff, init, compose, scopes, and 
   assert.equal(runCli(["doctor", "--root", root], io), 0);
   io.clear();
 
-  assert.equal(runCli(["compose", "--root", root, "--config", "agents-md.config.json", "--scope", "packages/api:retry.pattern.json", "--dry-run"], io), 0);
+  assert.equal(runCli(["compose", "--root", root, "--config", "railsmith.config.json", "--scope", "packages/api:retry.pattern.json", "--dry-run"], io), 0);
   assert.match(io.stdoutText(), /packages\/api\/AGENTS.md/);
   assert.equal(fs.existsSync(path.join(root, "packages", "api", "AGENTS.md")), false);
   io.clear();
@@ -518,7 +518,7 @@ test("bin entrypoint delegates to the CLI", async () => {
 });
 
 function tempProject() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "agents-md-"));
+  return fs.mkdtempSync(path.join(os.tmpdir(), "railsmith-"));
 }
 
 function writeJson(root, relative, value) {

@@ -3,11 +3,11 @@ import type { Diagnostic, MergeInput, MergeResult } from "./types.js";
 export const DEFAULT_MANAGED_BLOCK = "core";
 
 export function managedBlockStart(blockName = DEFAULT_MANAGED_BLOCK): string {
-  return `<!-- agents-md:start ${blockName} -->`;
+  return `<!-- railsmith:start ${blockName} -->`;
 }
 
 export function managedBlockEnd(blockName = DEFAULT_MANAGED_BLOCK): string {
-  return `<!-- agents-md:end ${blockName} -->`;
+  return `<!-- railsmith:end ${blockName} -->`;
 }
 
 export function createManagedBlock(body: string, blockName = DEFAULT_MANAGED_BLOCK): string {

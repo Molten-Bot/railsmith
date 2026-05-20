@@ -1,4 +1,4 @@
-# agents-md Agent Guide
+# railsmith Agent Guide
 
 This guide is shipped with the npm package so an agent can help a user create or maintain `AGENTS.md` without guessing the workflow.
 
@@ -11,18 +11,18 @@ Reference status:
 
 ## Default Workflow
 
-1. Run `agents-md doctor --root <project>` to inspect package manager, scripts, workspaces, CI files, and existing agent guidance.
-2. Run `agents-md init --root <project> --dry-run` to show the proposed root `AGENTS.md` managed block.
+1. Run `railsmith doctor --root <project>` to inspect package manager, scripts, workspaces, CI files, and existing agent guidance.
+2. Run `railsmith init --root <project> --dry-run` to show the proposed root `AGENTS.md` managed block.
 3. Ask the user which architectural or design patterns should be included.
 4. Add approved pattern JSON files with `--pattern <file>` for root guidance or `--scope <dir:file>` for nested scoped guidance.
    Use bundled pattern ids with `--use <id>` or `--scope-use <dir:id>` when the released package already contains the needed pattern.
 5. Rerun with `--dry-run` and review the diff with the user.
 6. Rerun without `--dry-run` only after the user approves the change.
-7. Run `agents-md check --root <project>` after writing to catch broken managed markers or stale package-script references.
+7. Run `railsmith check --root <project>` after writing to catch broken managed markers or stale package-script references.
 
 ## Agent Rules
 
-- Preserve user-authored text outside `<!-- agents-md:start core -->` and `<!-- agents-md:end core -->`.
+- Preserve user-authored text outside `<!-- railsmith:start core -->` and `<!-- railsmith:end core -->`.
 - Do not overwrite an existing `AGENTS.md` wholesale unless the user explicitly asks.
 - Prefer scoped nested `AGENTS.md` files when a pattern only applies to a package, service, app, or bounded folder.
 - Keep the final Markdown plain and portable; do not add tool-specific files unless the user asks for adapters.
@@ -61,16 +61,16 @@ Reference status:
 ## Useful Commands
 
 ```bash
-agents-md guide
-agents-md doctor --root .
-agents-md patterns list
-agents-md init --root . --dry-run
-agents-md init --root . --use cloud:retry
-agents-md init --root . --pattern retry.pattern.json
-agents-md init --root . --scope-use packages/api:cloud:retry
-agents-md init --root . --scope packages/api:retry.pattern.json
-agents-md diff --root . --mode detailed
-agents-md check --root .
+railsmith guide
+railsmith doctor --root .
+railsmith patterns list
+railsmith init --root . --dry-run
+railsmith init --root . --use cloud:retry
+railsmith init --root . --pattern retry.pattern.json
+railsmith init --root . --scope-use packages/api:cloud:retry
+railsmith init --root . --scope packages/api:retry.pattern.json
+railsmith diff --root . --mode detailed
+railsmith check --root .
 ```
 
 ## CI and Release Notes For Agents

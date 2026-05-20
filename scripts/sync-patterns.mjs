@@ -127,7 +127,7 @@ async function fetchJson(url) {
 function githubHeaders() {
   const headers = {
     "Accept": "application/vnd.github+json",
-    "User-Agent": "agents-markdown-pattern-sync"
+    "User-Agent": "railsmith-pattern-sync"
   };
 
   if (process.env.GITHUB_TOKEN) {

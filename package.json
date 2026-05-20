@@ -1,19 +1,19 @@
 {
-  "name": "@moltenbot/agents-markdown",
+  "name": "@moltenbot/railsmith",
   "version": "0.1.0",
   "description": "TypeScript SDK and CLI for generating and safely maintaining AGENTS.md guardrails.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Molten-Bot/agents-markdown.git"
+    "url": "git+https://github.com/Molten-Bot/railsmith.git"
   },
   "bugs": {
-    "url": "https://github.com/Molten-Bot/agents-markdown/issues"
+    "url": "https://github.com/Molten-Bot/railsmith/issues"
   },
-  "homepage": "https://github.com/Molten-Bot/agents-markdown#readme",
+  "homepage": "https://github.com/Molten-Bot/railsmith#readme",
   "type": "module",
   "bin": {
-    "agents-md": "./dist/bin.js"
+    "railsmith": "./dist/bin.js"
   },
   "exports": {
     ".": {

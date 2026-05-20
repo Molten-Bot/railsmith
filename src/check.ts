@@ -14,7 +14,7 @@ export function checkAgentsMd(input: CheckInput = {}): CheckResult {
   if (!fs.existsSync(filePath)) {
     diagnostics.push({
       severity: "warning",
-      code: "agents-md.missing",
+      code: "railsmith.missing",
       message: `${relativeFile} does not exist yet.`,
       file: relativeFile
     });
@@ -28,7 +28,7 @@ export function checkAgentsMd(input: CheckInput = {}): CheckResult {
   if (!/test/i.test(content)) {
     diagnostics.push({
       severity: "info",
-      code: "agents-md.testing-undocumented",
+      code: "railsmith.testing-undocumented",
       message: `${relativeFile} does not mention testing guidance.`,
       file: relativeFile
     });
@@ -45,7 +45,7 @@ function staleScriptDiagnostics(content: string, repoFacts: RepoFacts, file: str
     if (command.script && repoFacts.scripts[command.script] === undefined) {
       diagnostics.push({
         severity: "warning",
-        code: "agents-md.script-missing",
+        code: "railsmith.script-missing",
         message: `Command \`${command.raw}\` references missing package script "${command.script}".`,
         file
       });
