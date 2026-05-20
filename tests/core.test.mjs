@@ -4,12 +4,17 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {
+  bundledPatternManifest,
+  bundledPatterns,
   checkAgentsMd,
+  cloudPatterns,
   createManagedBlock,
   createUnifiedDiff,
+  designPatterns,
   extractManagedBlock,
   findPatternConflicts,
   generateAgentsMd,
+  getBundledPattern,
   hasErrors,
   managedBlockDiagnostics,
   managedBlockEnd,
@@ -308,6 +313,18 @@ test("patterns validate, conflict, and suggest without runtime dependencies", ()
   assert.equal(llmSuggestions[0].score, 99);
 });
 
+test("bundled patterns are exported from the release snapshot", async () => {
+  const patternsModule = await import("../dist/patterns.js");
+
+  assert.ok(cloudPatterns.length > 0);
+  assert.ok(designPatterns.length > 0);
+  assert.equal(bundledPatterns.length, cloudPatterns.length + designPatterns.length);
+  assert.equal(bundledPatternManifest.version, 1);
+  assert.equal(patternsModule.getBundledPattern("cloud:retry").id, "cloud:retry");
+  assert.equal(getBundledPattern("cloud:retry").title, "Retry Pattern");
+  assert.equal(getBundledPattern("missing:id"), undefined);
+});
+
 test("checkAgentsMd reports missing files, stale scripts, unbalanced blocks, and testing gaps", () => {
   const missingRoot = tempProject();
   assert.equal(checkAgentsMd({ root: missingRoot }).diagnostics[0].code, "agents-md.missing");
@@ -383,6 +400,30 @@ test("CLI supports help, guide, doctor, check, diff, init, compose, scopes, and 
   assert.match(io.stdoutText(), /Package manager: npm/);
   io.clear();
 
+  assert.equal(runCli(["patterns", "list"], io), 0);
+  assert.match(io.stdoutText(), /cloud:retry\tRetry Pattern/);
+  io.clear();
+
+  assert.equal(runCli(["patterns"], io), 0);
+  assert.match(io.stdoutText(), /cloud:retry\tRetry Pattern/);
+  io.clear();
+
+  assert.equal(runCli(["patterns", "nope"], io), 1);
+  assert.match(io.stderrText(), /Unknown patterns command/);
+  io.clear();
+
+  assert.equal(runCli(["diff", "--root", root, "--use", "cloud:retry"], io), 0);
+  assert.match(io.stdoutText(), /Retry Pattern/);
+  io.clear();
+
+  assert.equal(runCli(["diff", "--root", root, "--use", "missing:id"], io), 1);
+  assert.match(io.stderrText(), /pattern.bundled.missing/);
+  io.clear();
+
+  assert.equal(runCli(["diff", "--root", root, "--use"], io), 1);
+  assert.match(io.stderrText(), /pattern.bundled.missing/);
+  io.clear();
+
   assert.equal(runCli(["diff", "--root", root, "--mode", "detailed", "--pattern", "retry.pattern.json"], io), 0);
   assert.match(io.stdoutText(), /\+## Pattern Guidance/);
   assert.equal(fs.existsSync(path.join(root, "AGENTS.md")), false);
@@ -421,6 +462,23 @@ test("CLI supports help, guide, doctor, check, diff, init, compose, scopes, and 
   assert.equal(runCli(["compose", "--root", root, "--config", "agents-md.config.json", "--scope", "packages/api:retry.pattern.json", "--dry-run"], io), 0);
   assert.match(io.stdoutText(), /packages\/api\/AGENTS.md/);
   assert.equal(fs.existsSync(path.join(root, "packages", "api", "AGENTS.md")), false);
+  io.clear();
+
+  assert.equal(runCli(["compose", "--root", root, "--scope-use", "packages/api:cloud:retry", "--dry-run"], io), 0);
+  assert.match(io.stdoutText(), /packages\/api\/AGENTS.md/);
+  assert.match(io.stdoutText(), /Retry Pattern/);
+  io.clear();
+
+  assert.equal(runCli(["compose", "--root", root, "--scope-use", "--dry-run"], io), 0);
+  io.clear();
+
+  assert.equal(runCli(["compose", "--root", root, "--scope-use", "packages/api:", "--dry-run"], io), 0);
+  io.clear();
+
+  assert.equal(runCli(["compose", "--root", root, "--scope-use", ":cloud:retry", "--dry-run"], io), 0);
+  io.clear();
+
+  assert.equal(runCli(["compose", "--root", root, "--scope-use"], io), 0);
   io.clear();
 
   assert.equal(runCli(["diff", "--root", root, "--scope"], io), 0);

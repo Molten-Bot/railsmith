@@ -2,6 +2,13 @@ export { checkAgentsMd } from "./check.js";
 export { createUnifiedDiff } from "./diff.js";
 export { generateAgentsMd } from "./generate.js";
 export {
+  bundledPatternManifest,
+  bundledPatterns,
+  cloudPatterns,
+  designPatterns,
+  getBundledPattern
+} from "./patterns.js";
+export {
   createManagedBlock,
   DEFAULT_MANAGED_BLOCK,
   extractManagedBlock,

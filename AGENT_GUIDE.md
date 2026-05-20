@@ -15,6 +15,7 @@ Reference status:
 2. Run `agents-md init --root <project> --dry-run` to show the proposed root `AGENTS.md` managed block.
 3. Ask the user which architectural or design patterns should be included.
 4. Add approved pattern JSON files with `--pattern <file>` for root guidance or `--scope <dir:file>` for nested scoped guidance.
+   Use bundled pattern ids with `--use <id>` or `--scope-use <dir:id>` when the released package already contains the needed pattern.
 5. Rerun with `--dry-run` and review the diff with the user.
 6. Rerun without `--dry-run` only after the user approves the change.
 7. Run `agents-md check --root <project>` after writing to catch broken managed markers or stale package-script references.
@@ -62,8 +63,11 @@ Reference status:
 ```bash
 agents-md guide
 agents-md doctor --root .
+agents-md patterns list
 agents-md init --root . --dry-run
+agents-md init --root . --use cloud:retry
 agents-md init --root . --pattern retry.pattern.json
+agents-md init --root . --scope-use packages/api:cloud:retry
 agents-md init --root . --scope packages/api:retry.pattern.json
 agents-md diff --root . --mode detailed
 agents-md check --root .
@@ -74,5 +78,6 @@ agents-md check --root .
 - Pull requests must pass `.github/workflows/ci.yml`, which runs install, 100% coverage, and `npm pack --dry-run`.
 - Merges to `main` trigger the same CI workflow; publishing is gated by the successful `CI` workflow run.
 - `.github/workflows/publish.yml` publishes only from the validated `main` commit and skips if the package version already exists on npm.
+- Release publishing refreshes ignored generated pattern artifacts before the final build/test/package/publish steps. This vendors all current `AGENTS.md` files from `jefking/cloud-patterns` and `jefking/design-patterns` into the package snapshot without committing the generated snapshot to source.
 - npm trusted publishing must be configured on npmjs.com for organization/user `Molten-Bot`, repository `agents-markdown`, and workflow filename `publish.yml`.
 - Do not add `NPM_TOKEN` unless the user explicitly chooses token-based publishing; the intended path is OIDC trusted publishing.

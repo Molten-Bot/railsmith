@@ -7,6 +7,7 @@ import { checkAgentsMd } from "./check.js";
 import { createUnifiedDiff } from "./diff.js";
 import { generateAgentsMd } from "./generate.js";
 import { mergeAgentsMd } from "./merge.js";
+import { bundledPatterns, getBundledPattern } from "./patterns.js";
 import { scanProject } from "./scan.js";
 import type { AgentPattern, Diagnostic, GenerateConfig, OutputMode, PatternSelection } from "./types.js";
 
@@ -16,6 +17,7 @@ interface CliOptions {
   mode: OutputMode;
   config?: string;
   patterns: Array<{ path: string; scope?: string }>;
+  uses: Array<{ id: string; scope?: string }>;
   dryRun: boolean;
 }
 
@@ -34,9 +36,13 @@ export function runCli(argv: string[] = process.argv.slice(2), io: CliIo = defau
     return 0;
   }
 
-  if (!["init", "compose", "check", "doctor", "diff", "guide"].includes(options.command)) {
+  if (!["init", "compose", "check", "doctor", "diff", "guide", "patterns"].includes(options.command)) {
     io.stderr(`Unknown command: ${options.command}\n\n${usage()}`);
     return 1;
+  }
+
+  if (options.command === "patterns") {
+    return runPatterns(argv.slice(1), io);
   }
 
   if (options.command === "guide") {
@@ -58,7 +64,13 @@ function runGenerateCommand(options: CliOptions, io: CliIo, dryRun: boolean): nu
   const config = loadConfig(options.config, options.root);
   const repoFacts = scanProject(options.root);
   const configPatterns = config.patterns ?? [];
-  const patterns = [...configPatterns, ...loadPatternSelections(options.patterns, options.root)];
+  const bundledSelections = loadBundledSelections(options.uses);
+  printDiagnostics(bundledSelections.diagnostics, io);
+  const patterns = [
+    ...configPatterns,
+    ...loadPatternSelections(options.patterns, options.root),
+    ...bundledSelections.patterns
+  ];
   const result = generateAgentsMd({
     ...config,
     root: options.root,
@@ -82,7 +94,7 @@ function runGenerateCommand(options: CliOptions, io: CliIo, dryRun: boolean): nu
     }
   }
 
-  return hasError(result.diagnostics) ? 1 : 0;
+  return hasError([...bundledSelections.diagnostics, ...result.diagnostics]) ? 1 : 0;
 }
 
 function runCheck(options: CliOptions, io: CliIo): number {
@@ -114,6 +126,20 @@ function runGuide(io: CliIo): number {
   return 0;
 }
 
+function runPatterns(argv: string[], io: CliIo): number {
+  const subcommand = argv[0] ?? "list";
+  if (subcommand !== "list") {
+    io.stderr(`Unknown patterns command: ${subcommand}\n`);
+    return 1;
+  }
+
+  for (const pattern of bundledPatterns) {
+    io.stdout(`${pattern.id}\t${pattern.title}\n`);
+  }
+
+  return 0;
+}
+
 function parseArgs(argv: string[], cwd: string): CliOptions {
   const command = argv[0] ?? "help";
   const options: CliOptions = {
@@ -121,6 +147,7 @@ function parseArgs(argv: string[], cwd: string): CliOptions {
     root: cwd,
     mode: "standard",
     patterns: [],
+    uses: [],
     dryRun: false
   };
 
@@ -136,9 +163,16 @@ function parseArgs(argv: string[], cwd: string): CliOptions {
     } else if (arg === "--pattern") {
       options.patterns.push({ path: argv[++index]! });
     } else if (arg === "--scope") {
-      const [scope, patternPath] = (argv[++index] ?? "").split(":", 2);
+      const [scope, patternPath] = splitScopedValue(argv[++index] ?? "");
       if (scope && patternPath) {
         options.patterns.push({ scope, path: patternPath });
+      }
+    } else if (arg === "--use") {
+      options.uses.push({ id: argv[++index]! });
+    } else if (arg === "--scope-use") {
+      const [scope, id] = splitScopedValue(argv[++index] ?? "");
+      if (scope && id) {
+        options.uses.push({ scope, id });
       }
     } else if (arg === "--dry-run") {
       options.dryRun = true;
@@ -172,6 +206,36 @@ function loadPatternSelections(patterns: Array<{ path: string; scope?: string }>
   }));
 }
 
+function loadBundledSelections(uses: Array<{ id: string; scope?: string }>): { patterns: PatternSelection[]; diagnostics: Diagnostic[] } {
+  const diagnostics: Diagnostic[] = [];
+  const patterns: PatternSelection[] = [];
+
+  for (const item of uses) {
+    const pattern = getBundledPattern(item.id);
+    if (!pattern) {
+      diagnostics.push({
+        severity: "error",
+        code: "pattern.bundled.missing",
+        message: `Bundled pattern "${item.id}" was not found. Run \`agents-md patterns list\` to inspect available ids.`
+      });
+      continue;
+    }
+
+    patterns.push({ pattern, scope: item.scope });
+  }
+
+  return { patterns, diagnostics };
+}
+
+function splitScopedValue(value: string): [string | undefined, string | undefined] {
+  const index = value.indexOf(":");
+  if (index === -1) {
+    return [undefined, undefined];
+  }
+
+  return [value.slice(0, index), value.slice(index + 1)];
+}
+
 function printDiagnostics(diagnostics: Diagnostic[], io: CliIo): void {
   for (const diagnostic of diagnostics) {
     const line = `[${diagnostic.severity}] ${diagnostic.code}: ${diagnostic.message}`;
@@ -197,6 +261,7 @@ Commands:
   check      Validate AGENTS.md markers and referenced package scripts.
   doctor     Print scan facts and validation diagnostics.
   guide      Print the agent-facing usage guide shipped with the package.
+  patterns   List bundled pattern ids and titles.
 
 Options:
   --root <dir>             Project root. Defaults to the current directory.
@@ -204,6 +269,8 @@ Options:
   --config <file>          JSON GenerateConfig file.
   --pattern <file>         Pattern JSON file for root AGENTS.md.
   --scope <dir:file>       Pattern JSON file for a scoped nested AGENTS.md.
+  --use <id>               Bundled pattern id for root AGENTS.md.
+  --scope-use <dir:id>     Bundled pattern id for a scoped nested AGENTS.md.
   --dry-run                Print diffs without writing files.
 `;
 }

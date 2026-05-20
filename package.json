@@ -23,18 +23,26 @@
     "./cli": {
       "types": "./dist/cli.d.ts",
       "import": "./dist/cli.js"
+    },
+    "./patterns": {
+      "types": "./dist/patterns.d.ts",
+      "import": "./dist/patterns.js"
     }
   },
   "files": [
     "dist/",
+    "patterns/",
     "AGENT_GUIDE.md",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
+    "sync:patterns": "node scripts/sync-patterns.mjs",
+    "build:release": "npm run sync:patterns && npm run build",
     "build": "tsc -p tsconfig.json",
-    "test": "npm run build && node --test tests/*.test.mjs",
-    "coverage": "npm run build && node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 --test-coverage-include='dist/**/*.js' tests/*.test.mjs"
+    "test": "npm run build:release && node --test tests/*.test.mjs",
+    "coverage": "npm run build:release && node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 --test-coverage-include='dist/**/*.js' tests/*.test.mjs",
+    "prepack": "npm run build:release"
   },
   "engines": {
     "node": ">=20"
