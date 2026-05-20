@@ -20,6 +20,7 @@ import {
   managedBlockEnd,
   managedBlockStart,
   mergeAgentsMd,
+  renderPatternLearning,
   scanProject,
   suggestPatterns,
   validatePattern
@@ -325,6 +326,34 @@ test("bundled patterns are exported from the release snapshot", async () => {
   assert.equal(getBundledPattern("missing:id"), undefined);
 });
 
+test("renderPatternLearning prints structured and full-fidelity guidance", () => {
+  const full = renderPatternLearning(retryPattern);
+  assert.match(full, /# Retry Pattern/);
+  assert.match(full, /Pattern id: `retry`/);
+  assert.match(full, /## Apply When/);
+  assert.match(full, /## Full Pattern Contract/);
+  assert.match(full, /### Retry Pattern/);
+  assert.match(full, /https:\/\/learn\.microsoft\.com\/en-us\/azure\/architecture\/patterns\/retry/);
+
+  const summary = renderPatternLearning({ ...retryPattern, invariants: [], verification: [], sources: [] }, { includeSourceGuidance: false });
+  assert.doesNotMatch(summary, /Architecture Invariants/);
+  assert.doesNotMatch(summary, /Full Pattern Contract/);
+  assert.match(summary, /## Do Not Use When/);
+
+  const sparse = renderPatternLearning({
+    id: "sparse",
+    title: "Sparse Pattern",
+    intent: " ",
+    applyWhen: ["A local guard applies."],
+    doNotUseWhen: ["The guard does not apply."],
+    markdown: " "
+  });
+  assert.doesNotMatch(sparse, /## Intent/);
+  assert.doesNotMatch(sparse, /Architecture Invariants/);
+  assert.doesNotMatch(sparse, /## Sources/);
+  assert.doesNotMatch(sparse, /Full Pattern Contract/);
+});
+
 test("checkAgentsMd reports missing files, stale scripts, unbalanced blocks, and testing gaps", () => {
   const missingRoot = tempProject();
   assert.equal(checkAgentsMd({ root: missingRoot }).diagnostics[0].code, "railsmith.missing");
@@ -388,6 +417,19 @@ test("CLI supports help, guide, doctor, check, diff, init, compose, scopes, and 
   assert.equal(runCli(["guide"], io), 0);
   assert.match(io.stdoutText(), /# Short\n$/);
   delete io.guidePath;
+  io.clear();
+
+  assert.equal(runCli(["learn", "cloud:retry"], io), 0);
+  assert.match(io.stdoutText(), /# Retry Pattern/);
+  assert.match(io.stdoutText(), /## Full Pattern Contract/);
+  io.clear();
+
+  assert.equal(runCli(["learn"], io), 1);
+  assert.match(io.stderrText(), /Usage: railsmith learn <pattern-id>/);
+  io.clear();
+
+  assert.equal(runCli(["learn", "missing:id"], io), 1);
+  assert.match(io.stderrText(), /Bundled pattern "missing:id" was not found/);
   io.clear();
 
   const emptyRoot = tempProject();

@@ -1,6 +1,8 @@
 export { checkAgentsMd } from "./check.js";
 export { createUnifiedDiff } from "./diff.js";
 export { generateAgentsMd } from "./generate.js";
+export { renderPatternLearning } from "./learn.js";
+export type { LearnPatternOptions } from "./learn.js";
 export {
   bundledPatternManifest,
   bundledPatterns,

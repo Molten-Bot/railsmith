@@ -1,0 +1,1 @@
+{"version":3,"file":"learn.d.ts","sourceRoot":"","sources":["../src/learn.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,YAAY,EAAE,MAAM,YAAY,CAAC;AAE/C,MAAM,WAAW,mBAAmB;IAClC,qBAAqB,CAAC,EAAE,OAAO,CAAC;CACjC;AAED,wBAAgB,qBAAqB,CAAC,OAAO,EAAE,YAAY,EAAE,OAAO,GAAE,mBAAwB,GAAG,MAAM,CAetG"}

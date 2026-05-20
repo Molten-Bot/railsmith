@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { checkAgentsMd } from "./check.js";
 import { createUnifiedDiff } from "./diff.js";
 import { generateAgentsMd } from "./generate.js";
+import { renderPatternLearning } from "./learn.js";
 import { mergeAgentsMd } from "./merge.js";
 import { bundledPatterns, getBundledPattern } from "./patterns.js";
 import { scanProject } from "./scan.js";
@@ -15,7 +16,7 @@ export function runCli(argv = process.argv.slice(2), io = defaultIo()) {
         io.stdout(usage());
         return 0;
     }
-    if (!["init", "compose", "check", "doctor", "diff", "guide", "patterns"].includes(options.command)) {
+    if (!["init", "compose", "check", "doctor", "diff", "guide", "learn", "patterns"].includes(options.command)) {
         io.stderr(`Unknown command: ${options.command}\n\n${usage()}`);
         return 1;
     }
@@ -24,6 +25,9 @@ export function runCli(argv = process.argv.slice(2), io = defaultIo()) {
     }
     if (options.command === "guide") {
         return runGuide(io);
+    }
+    if (options.command === "learn") {
+        return runLearn(argv.slice(1), io);
     }
     if (options.command === "check") {
         return runCheck(options, io);
@@ -87,6 +91,20 @@ function runGuide(io) {
     const guidePath = io.guidePath ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "AGENT_GUIDE.md");
     const guide = fs.existsSync(guidePath) ? fs.readFileSync(guidePath, "utf8") : fallbackGuide();
     io.stdout(guide.endsWith("\n") ? guide : `${guide}\n`);
+    return 0;
+}
+function runLearn(argv, io) {
+    const id = argv[0];
+    if (!id) {
+        io.stderr("Usage: railsmith learn <pattern-id>\nRun `railsmith patterns list` to inspect available ids.\n");
+        return 1;
+    }
+    const pattern = getBundledPattern(id);
+    if (!pattern) {
+        io.stderr(`Bundled pattern "${id}" was not found. Run \`railsmith patterns list\` to inspect available ids.\n`);
+        return 1;
+    }
+    io.stdout(renderPatternLearning(pattern));
     return 0;
 }
 function runPatterns(argv, io) {
@@ -212,6 +230,7 @@ Commands:
   check      Validate AGENTS.md markers and referenced package scripts.
   doctor     Print scan facts and validation diagnostics.
   guide      Print the agent-facing usage guide shipped with the package.
+  learn      Print high-fidelity guidance for a bundled pattern.
   patterns   List bundled pattern ids and titles.
 
 Options:
