@@ -58,7 +58,26 @@ const merged = mergeAgentsMd({
 
 ## Bundled Patterns
 
-Railsmith ships with a curated snapshot of patterns from [`jefking/cloud-patterns`](https://github.com/jefking/cloud-patterns) and [`jefking/design-patterns`](https://github.com/jefking/design-patterns). Sync them anytime:
+Railsmith ships with a curated snapshot of patterns from [`jefking/cloud-patterns`](https://github.com/jefking/cloud-patterns) and [`jefking/design-patterns`](https://github.com/jefking/design-patterns).
+
+See [PATTERNS.md](./PATTERNS.md) for the complete bundled list. Common starting points:
+
+| Pattern | Use when |
+| --- | --- |
+| `cloud:retry` | Anticipated transient faults need bounded, delay-aware retries. |
+| `cloud:circuit-breaker` | Repeated remote dependency failures should fail fast until recovery. |
+| `cloud:cache-aside` | Reads can populate and reuse a cache beside an authoritative store. |
+| `cloud:queue-based-load-leveling` | Bursty producers need buffering before sustainable downstream processing. |
+| `cloud:rate-limiting` | Workload consumption must stay within dependency quotas or capacity. |
+| `cloud:saga` | Distributed business transactions need local commits plus compensations. |
+| `cloud:strangler-fig` | Legacy capability should move incrementally to a new implementation. |
+| `cloud:sidecar` | Supporting capability belongs beside the app, not embedded inside it. |
+| `design:creational/dependency-injection` | Construction and dependency lifetime should stay at a composition boundary. |
+| `design:structural/adapter` | Client code needs an incompatible object through an expected interface. |
+| `design:behavioral/strategy` | Alternative algorithms should share one interface and swap cleanly. |
+| `design:concurrency/thread-pool` | Queued work should reuse bounded workers instead of creating threads repeatedly. |
+
+Sync bundled snapshots anytime:
 
 ```bash
 npm run sync:patterns
