@@ -1,9 +1,9 @@
 export const DEFAULT_MANAGED_BLOCK = "core";
 export function managedBlockStart(blockName = DEFAULT_MANAGED_BLOCK) {
-    return `<!-- agents-md:start ${blockName} -->`;
+    return `<!-- railsmith:start ${blockName} -->`;
 }
 export function managedBlockEnd(blockName = DEFAULT_MANAGED_BLOCK) {
-    return `<!-- agents-md:end ${blockName} -->`;
+    return `<!-- railsmith:end ${blockName} -->`;
 }
 export function createManagedBlock(body, blockName = DEFAULT_MANAGED_BLOCK) {
     return `${managedBlockStart(blockName)}\n${body.trim()}\n${managedBlockEnd(blockName)}`;
