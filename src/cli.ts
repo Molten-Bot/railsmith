@@ -23,6 +23,7 @@ interface CliIo {
   cwd: string;
   stdout: (message: string) => void;
   stderr: (message: string) => void;
+  guidePath?: string;
 }
 
 export function runCli(argv = process.argv.slice(2), io: CliIo = defaultIo()): number {
@@ -107,7 +108,7 @@ function runDoctor(options: CliOptions, io: CliIo): number {
 }
 
 function runGuide(io: CliIo): number {
-  const guidePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "AGENT_GUIDE.md");
+  const guidePath = io.guidePath ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "AGENT_GUIDE.md");
   const guide = fs.existsSync(guidePath) ? fs.readFileSync(guidePath, "utf8") : fallbackGuide();
   io.stdout(guide.endsWith("\n") ? guide : `${guide}\n`);
   return 0;
@@ -226,6 +227,8 @@ Use \`agents-md init --dry-run\` to inspect proposed AGENTS.md changes, then rer
 `;
 }
 
+/* node:coverage disable */
 if (isDirectRun(import.meta.url, process.argv[1])) {
   process.exitCode = runCli();
 }
+/* node:coverage enable */
