@@ -76,7 +76,7 @@ function runGenerateCommand(options: CliOptions, io: CliIo, dryRun: boolean): nu
     printDiagnostics(merge.diagnostics, io);
     io.stdout(createUnifiedDiff(file.path, existing, merge.content));
 
-    if (!dryRun && merge.diagnostics.every((diagnostic) => diagnostic.severity !== "error")) {
+    if (!dryRun && !hasError(merge.diagnostics)) {
       fs.mkdirSync(path.dirname(target), { recursive: true });
       fs.writeFileSync(target, merge.content);
     }
