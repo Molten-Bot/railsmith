@@ -1,5 +1,5 @@
 {
-  "name": "agents-markdown",
+  "name": "@moltenbot/agents-markdown",
   "version": "0.1.0",
   "description": "TypeScript SDK and CLI for generating and safely maintaining AGENTS.md guardrails.",
   "license": "MIT",

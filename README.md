@@ -1,4 +1,4 @@
-# railsmith
+# agents-markdown
 
 Guardrails for your AI-augmented engineering workflow. A TypeScript SDK and zero-dependency CLI for crafting and maintaining `AGENTS.md` files that actually hold up.
 
@@ -7,7 +7,7 @@ Guardrails for your AI-augmented engineering workflow. A TypeScript SDK and zero
 ## Install
 
 ```bash
-npm install --save-dev railsmith
+npm install --save-dev @moltenbot/agents-markdown
 ```
 
 ---
@@ -15,21 +15,21 @@ npm install --save-dev railsmith
 ## CLI
 
 ```bash
-npx railsmith guide                                         # read the agent workflow guide
-npx railsmith doctor --root .                              # scan and validate your repo
-npx railsmith init --root . --dry-run                      # preview before writing
-npx railsmith init --root . --use cloud:retry              # init with a bundled pattern
-npx railsmith init --root . --scope packages/api:retry     # scoped to a package
-npx railsmith check --root .                               # validate managed markers
-npx railsmith patterns list                                # browse bundled patterns
+npx agents-md guide                                         # read the agent workflow guide
+npx agents-md doctor --root .                              # scan and validate your repo
+npx agents-md init --root . --dry-run                      # preview before writing
+npx agents-md init --root . --use cloud:retry              # init with a bundled pattern
+npx agents-md init --root . --scope packages/api:retry     # scoped to a package
+npx agents-md check --root .                               # validate managed markers
+npx agents-md patterns list                                # browse bundled patterns
 ```
 
 Your hand-written Markdown is never touched. Generated content lives inside clearly marked blocks:
 
 ```md
-<!-- railsmith:start core -->
+<!-- agents-md:start core -->
 ...
-<!-- railsmith:end core -->
+<!-- agents-md:end core -->
 ```
 
 ---
@@ -37,7 +37,7 @@ Your hand-written Markdown is never touched. Generated content lives inside clea
 ## SDK
 
 ```ts
-import { generateAgentsMd, getBundledPattern, mergeAgentsMd, scanProject } from "railsmith";
+import { generateAgentsMd, getBundledPattern, mergeAgentsMd, scanProject } from "@moltenbot/agents-markdown";
 
 const repoFacts = scanProject(".");
 const retryPattern = getBundledPattern("cloud:retry");
@@ -57,14 +57,14 @@ const merged = mergeAgentsMd({
 
 ## Bundled Patterns
 
-Railsmith ships with a curated snapshot of patterns from [`jefking/cloud-patterns`](https://github.com/jefking/cloud-patterns) and [`jefking/design-patterns`](https://github.com/jefking/design-patterns). Sync them anytime:
+agents-markdown ships with a curated snapshot of patterns from [`jefking/cloud-patterns`](https://github.com/jefking/cloud-patterns) and [`jefking/design-patterns`](https://github.com/jefking/design-patterns). Sync them anytime:
 
 ```bash
 npm run sync:patterns
 ```
 
 ```ts
-import { cloudPatterns, designPatterns, getBundledPattern } from "railsmith/patterns";
+import { cloudPatterns, designPatterns, getBundledPattern } from "@moltenbot/agents-markdown/patterns";
 ```
 
 ---

@@ -11,7 +11,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 concurrency:
   group: npm-publish-main
@@ -29,7 +28,7 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
-      - name: Set up Node.js for npm trusted publishing
+      - name: Set up Node.js for npm publishing
         uses: actions/setup-node@v6
         with:
           node-version: 24
@@ -61,7 +60,9 @@ jobs:
 
       - name: Publish to npm
         if: ${{ steps.published.outputs.exists == 'false' }}
-        run: npm publish
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Skip already published version
         if: ${{ steps.published.outputs.exists == 'true' }}

@@ -79,5 +79,4 @@ agents-md check --root .
 - Merges to `main` trigger the same CI workflow; publishing is gated by the successful `CI` workflow run.
 - `.github/workflows/publish.yml` publishes only from the validated `main` commit and skips if the package version already exists on npm.
 - Release publishing refreshes ignored generated pattern artifacts before the final build/test/package/publish steps. This vendors all current `AGENTS.md` files from `jefking/cloud-patterns` and `jefking/design-patterns` into the package snapshot without committing the generated snapshot to source.
-- npm trusted publishing must be configured on npmjs.com for organization/user `Molten-Bot`, repository `agents-markdown`, and workflow filename `publish.yml`.
-- Do not add `NPM_TOKEN` unless the user explicitly chooses token-based publishing; the intended path is OIDC trusted publishing.
+- npm publishing uses the repository secret `NPM_TOKEN`; configure it in GitHub Actions secrets before relying on release automation.
