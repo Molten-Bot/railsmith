@@ -1,6 +1,6 @@
 {
   "name": "@moltenbot/railsmith",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "TypeScript SDK and CLI for generating and safely maintaining AGENTS.md guardrails.",
   "license": "MIT",
   "repository": {
@@ -13,7 +13,7 @@
   "homepage": "https://github.com/Molten-Bot/railsmith#readme",
   "type": "module",
   "bin": {
-    "railsmith": "./dist/bin.js"
+    "railsmith": "dist/bin.js"
   },
   "exports": {
     ".": {
@@ -39,7 +39,8 @@
   "scripts": {
     "sync:patterns": "node scripts/sync-patterns.mjs",
     "build:ts": "tsc -p tsconfig.json",
-    "build": "npm run sync:patterns && npm run build:ts",
+    "build:bin": "node scripts/prepare-bin.mjs",
+    "build": "npm run sync:patterns && npm run build:ts && npm run build:bin",
     "test": "npm run build && node --test tests/*.test.mjs",
     "coverage": "npm run build && node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 --test-coverage-include='dist/**/*.js' tests/*.test.mjs",
     "prepack": "npm run build"
