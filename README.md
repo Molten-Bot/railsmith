@@ -2,6 +2,12 @@
 
 TypeScript SDK and zero-runtime-dependency CLI for creating and safely maintaining `AGENTS.md` guardrails.
 
+## Requirements
+
+- Node.js 20 or newer.
+- npm for dependency installation and package scripts.
+- Network access to GitHub when refreshing bundled pattern snapshots.
+
 ## Install
 
 ```bash
@@ -93,6 +99,11 @@ npm run sync:patterns
 
 It writes ignored generated artifacts under `patterns/`, `src/generated/`, and `dist/generated/`. `npm run build`, `npm test`, `npm run coverage`, and `npm pack` refresh the pattern snapshot before compiling, so a clean checkout does not need committed pattern snapshots.
 
+Optional environment variables:
+- `AGENTS_MD_CLOUD_PATTERNS_REF`: Git ref for `jefking/cloud-patterns` (defaults to `main`).
+- `AGENTS_MD_DESIGN_PATTERNS_REF`: Git ref for `jefking/design-patterns` (defaults to `main`).
+- `GITHUB_TOKEN`: optional token for GitHub API and raw content requests.
+
 Use the bundled patterns from code:
 
 ```ts
@@ -117,14 +128,17 @@ generateAgentsMd({
 });
 ```
 
-## Quality Gates
+## Contributor Workflow
 
 ```bash
+npm ci
+npm run build
 npm test
 npm run coverage
+npm pack --dry-run
 ```
 
-`npm run coverage` enforces 100% line, branch, and function coverage across the built SDK and CLI modules.
+`npm run build` refreshes bundled patterns and compiles TypeScript into `dist/`. `npm test` rebuilds and runs the Node test suite. `npm run coverage` rebuilds and enforces 100% line, branch, and function coverage across the built SDK and CLI modules.
 
 ## CI and Release
 
