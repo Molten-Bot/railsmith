@@ -19,7 +19,8 @@ npx railsmith guide                                         # read the agent wor
 npx railsmith doctor --root .                              # scan and validate your repo
 npx railsmith init --root . --dry-run                      # preview before writing
 npx railsmith init --root . --use cloud:retry              # init with a bundled pattern
-npx railsmith init --root . --scope packages/api:retry     # scoped to a package
+npx railsmith init --root . --scope-use packages/api:cloud:retry # scoped bundled pattern
+npx railsmith learn cloud:retry                            # read full pattern guidance
 npx railsmith check --root .                               # validate managed markers
 npx railsmith patterns list                                # browse bundled patterns
 ```
@@ -66,6 +67,8 @@ npm run sync:patterns
 ```ts
 import { cloudPatterns, designPatterns, getBundledPattern } from "@moltenbot/railsmith/patterns";
 ```
+
+Use `npx railsmith learn <pattern-id>` when you want the complete pattern contract, including applicability gates, invariants, verification prompts, sources, and the bundled source guidance.
 
 ---
 
