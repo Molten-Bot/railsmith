@@ -1,63 +1,47 @@
-# agents-markdown
+# railsmith
 
-TypeScript SDK and zero-runtime-dependency CLI for creating and safely maintaining `AGENTS.md` guardrails.
+Guardrails for your AI-augmented engineering workflow. A TypeScript SDK and zero-dependency CLI for crafting and maintaining `AGENTS.md` files that actually hold up.
 
-## Requirements
-
-- Node.js 20 or newer.
-- npm for dependency installation and package scripts.
-- Network access to GitHub when refreshing bundled pattern snapshots.
+---
 
 ## Install
 
 ```bash
-npm install --save-dev agents-markdown
+npm install --save-dev railsmith
 ```
+
+---
 
 ## CLI
 
 ```bash
-npx agents-md guide
-npx agents-md doctor --root .
-npx agents-md init --root . --dry-run
-npx agents-md patterns list
-npx agents-md init --root . --use cloud:retry
-npx agents-md init --root . --pattern retry.pattern.json
-npx agents-md init --root . --scope packages/api:retry.pattern.json
-npx agents-md check --root .
+npx railsmith guide                                         # read the agent workflow guide
+npx railsmith doctor --root .                              # scan and validate your repo
+npx railsmith init --root . --dry-run                      # preview before writing
+npx railsmith init --root . --use cloud:retry              # init with a bundled pattern
+npx railsmith init --root . --scope packages/api:retry     # scoped to a package
+npx railsmith check --root .                               # validate managed markers
+npx railsmith patterns list                                # browse bundled patterns
 ```
 
-Commands:
-- `guide`: prints the agent-facing workflow shipped as `AGENT_GUIDE.md`.
-- `doctor`: scans repo facts and validates existing guidance.
-- `init`: creates or updates managed `AGENTS.md` blocks.
-- `compose`: generates from a JSON config and optional pattern files.
-- `diff`: prints proposed changes without writing files.
-- `check`: validates managed markers and package-script references.
-- `patterns`: lists bundled pattern ids from the vendored pattern snapshot.
-
-By default, existing user-authored Markdown is preserved. Generated content is written inside:
+Your hand-written Markdown is never touched. Generated content lives inside clearly marked blocks:
 
 ```md
-<!-- agents-md:start core -->
+<!-- railsmith:start core -->
 ...
-<!-- agents-md:end core -->
+<!-- railsmith:end core -->
 ```
+
+---
 
 ## SDK
 
 ```ts
-import {
-  cloudPatterns,
-  generateAgentsMd,
-  getBundledPattern,
-  mergeAgentsMd,
-  scanProject,
-  suggestPatterns
-} from "agents-markdown";
+import { generateAgentsMd, getBundledPattern, mergeAgentsMd, scanProject } from "railsmith";
 
 const repoFacts = scanProject(".");
 const retryPattern = getBundledPattern("cloud:retry");
+
 const result = generateAgentsMd({
   repoFacts,
   patterns: retryPattern ? [retryPattern] : []
@@ -69,89 +53,26 @@ const merged = mergeAgentsMd({
 });
 ```
 
-## Pattern Shape
-
-```ts
-type AgentPattern = {
-  id: string;
-  title: string;
-  intent: string;
-  applyWhen: string[];
-  doNotUseWhen: string[];
-  invariants?: string[];
-  verification?: string[];
-  markdown: string;
-  sources?: string[];
-};
-```
+---
 
 ## Bundled Patterns
 
-Release builds vendor all `AGENTS.md` pattern files from:
-- `jefking/cloud-patterns`
-- `jefking/design-patterns`
-
-The sync is explicit and dependency-free:
+Railsmith ships with a curated snapshot of patterns from [`jefking/cloud-patterns`](https://github.com/jefking/cloud-patterns) and [`jefking/design-patterns`](https://github.com/jefking/design-patterns). Sync them anytime:
 
 ```bash
 npm run sync:patterns
 ```
 
-It writes ignored generated artifacts under `patterns/`, `src/generated/`, and `dist/generated/`. `npm run build`, `npm test`, `npm run coverage`, and `npm pack` refresh the pattern snapshot before compiling, so a clean checkout does not need committed pattern snapshots.
-
-Optional environment variables:
-- `AGENTS_MD_CLOUD_PATTERNS_REF`: Git ref for `jefking/cloud-patterns` (defaults to `main`).
-- `AGENTS_MD_DESIGN_PATTERNS_REF`: Git ref for `jefking/design-patterns` (defaults to `main`).
-- `GITHUB_TOKEN`: optional token for GitHub API and raw content requests.
-
-Use the bundled patterns from code:
-
 ```ts
-import { bundledPatterns, cloudPatterns, designPatterns, getBundledPattern } from "agents-markdown/patterns";
+import { cloudPatterns, designPatterns, getBundledPattern } from "railsmith/patterns";
 ```
 
-Use them from the CLI:
+---
+
+## Contributing
 
 ```bash
-agents-md patterns list
-agents-md init --use cloud:retry
-agents-md init --scope-use packages/api:cloud:retry
+npm ci && npm run build && npm test
 ```
 
-Use `scope` to generate nested `AGENTS.md` files for specific packages, services, or app folders:
-
-```ts
-generateAgentsMd({
-  patterns: [
-    { pattern: retryPattern, scope: "packages/api" }
-  ]
-});
-```
-
-## Contributor Workflow
-
-```bash
-npm ci
-npm run build
-npm test
-npm run coverage
-npm pack --dry-run
-```
-
-`npm run build` refreshes bundled patterns and compiles TypeScript into `dist/`. `npm test` rebuilds and runs the Node test suite. `npm run coverage` rebuilds and enforces 100% line, branch, and function coverage across the built SDK and CLI modules.
-
-## CI and Release
-
-Pull requests and pushes to `main` run `.github/workflows/ci.yml`:
-- `npm ci`
-- `npm run coverage`
-- `npm pack --dry-run`
-
-Publishing is handled by `.github/workflows/publish.yml`. It runs only after the `CI` workflow succeeds on a `main` branch push, checks out the validated commit, refreshes the bundled pattern snapshot during release validation/packaging, and publishes to npm when the `package.json` version is not already published.
-
-Configure npm trusted publishing for:
-- Organization/user: `Molten-Bot`
-- Repository: `agents-markdown`
-- Workflow filename: `publish.yml`
-
-The publish workflow uses `id-token: write` and `npm publish` so npm can authenticate via OIDC and attach provenance for eligible public packages.
+100% line, branch, and function coverage enforced. Releases publish automatically via OIDC when the version in `package.json` hasn't been published yet.
