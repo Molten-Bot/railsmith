@@ -2,13 +2,6 @@
 
 TypeScript SDK and zero-runtime-dependency CLI for creating and safely maintaining `AGENTS.md` guardrails.
 
-Reference status:
-- AGENTS.md public guidance checked against https://agents.md/ on 2026-05-20.
-- TypeScript release checked with `npm view typescript version` on 2026-05-20; latest observed release was `6.0.3`.
-- GitHub Actions references checked on 2026-05-20; workflows use `actions/checkout@v6` and `actions/setup-node@v6`.
-- npm trusted publishing guidance checked on 2026-05-20; release uses GitHub Actions OIDC instead of a long-lived npm token.
-- Runtime dependencies: none.
-
 ## Install
 
 ```bash
