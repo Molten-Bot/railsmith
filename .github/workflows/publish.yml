@@ -39,9 +39,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Sync bundled pattern snapshot
-        run: npm run sync:patterns
-
       - name: Build and test with coverage
         run: npm run coverage
 

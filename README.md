@@ -98,7 +98,7 @@ The sync is explicit and dependency-free:
 npm run sync:patterns
 ```
 
-It writes ignored generated artifacts under `patterns/`, `src/generated/`, and `dist/generated/`. Published packages include the built SDK exports and the JSON snapshot because `npm pack` runs `prepack`, which refreshes the pattern snapshot and rebuilds the package.
+It writes ignored generated artifacts under `patterns/`, `src/generated/`, and `dist/generated/`. `npm run build`, `npm test`, `npm run coverage`, and `npm pack` refresh the pattern snapshot before compiling, so a clean checkout does not need committed pattern snapshots.
 
 Use the bundled patterns from code:
 
