@@ -1,6 +1,6 @@
 # railsmith
 
-Guardrails for your AI-augmented engineering workflow. A TypeScript SDK and zero-dependency CLI for crafting and maintaining `AGENTS.md` files that actually hold up.
+Railsmith is not just an AGENTS.md generator. It is a maintenance loop for agent-readable engineering context.
 
 ---
 
